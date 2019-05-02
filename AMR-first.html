@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+
+<style>
+
+.country:hover{
+        stroke: #fff;
+        stroke-width: 4.5px;
+    }
+.text{
+    font-size:10px;
+    text-transform:capitalize;
+}
+.wpd3-131-6 {
+    margin:-49px 0px 0px 0px;
+    height:100%;
+    overflow:hidden;
+    background: #ebecfa; //#F0F8FF; #F5F0EB;
+}
+
+.hidden {
+    display: none;
+}
+
+div.tooltip {
+    color: #222;
+    background: #e9e9f3;
+    padding: .5em;
+    //text-shadow: #f5f5f5 0 1px 0;
+    font-size: 80%;
+    //border-style: solid;
+    border: 1px solid #99a1e6;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    //  box-shadow: 0px 0px 2px 0px #a6a6a6;
+    opacity: 0.9;
+    position: absolute;
+}
+
+#tooltipHead {
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #730000;
+    font-size: 160%;
+    font-family: Ruda;
+    line-height: 200%;
+}
+
+#tooltipTitle {
+    font-weight: bold;
+    color: #069;
+    font-size: 160%;
+    font-family: Ruda;
+}
+
+#tooltipContent {
+    font-style: italic;
+    font-size: 165%;
+    font-family: Ruda;
+}
+
+.graticule {
+    fill: none;
+    stroke: #bbb;
+    stroke-width: .5px;
+    stroke-opacity: .5;
+}
+.equator {
+    stroke: #ccc;
+    stroke-width: 1px;
+}
+
+circle {
+    fill: orange;
+    stroke: black;
+    stroke-width: 0.7;
+    opacity: 0.7;
+}
+
+h2 {
+    text-align: center;
+    color: black;
+}
+
+div.bacterias_buttons {
+    position: absolute;
+    bottom: -10px;
+    left: 93px;
+}
+
+div.bacterias_buttons div {
+    //background-color: #06F; //skyblue
+    //border-radius: 5px;
+    border:2px solid #111645;
+    color: #069;
+    font-size: 120%;
+    padding: 3px;
+    margin: 2px;
+}
+
+div.antibiotics_buttons {
+    position: absolute;
+    bottom: 260px;
+    left: 93px;
+    //font-size: 105 !important%
+}
+
+div.antibiotics_buttons div {
+    //background-color: #F00;//red
+    //border-radius: 5px;
+    border:2px solid #111645;
+    color: #730000;
+    font-size: 120%;
+    padding: 3px;
+    margin: 2px;
+}
+
+
+div.year_buttons {
+    position: absolute;
+    top: 147px;
+    left: 8px;
+}
+
+div.year_buttons div {
+    //background-color: #F30;
+    //border-radius: 5px;
+    border:1px solid #F30;
+    color: #F30;
+    font-size: 100%;
+    padding: 0px 5px;
+    margin: 2px 5px;
+}
+
+div.animate_button {
+    position: absolute;
+    top: 75px;
+    left: 10px;
+    background-color: #FF3300;
+    border-radius: 3px;
+    font-size: 200%;
+    padding: 3px 5px;
+    margin: 2px 5px;
+}
+
+#legend {
+    padding: 1.5em 0 0 1.5em;
+    left: 500px;
+}
+
+li.key {
+    border-top-width: 15px;
+    border-top-style: solid;
+    font-size: .75em;
+    width: 10%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.title_wrapper {
+    background-color: #333333;
+    padding-bottom: 18px;
+    border-bottom: 5px solid #fff;
+}
+
+h1 {
+    font-size: 28px;
+    text-align: center;
+    letter-spacing: 2px;
+    line-height: 2em;
+    color: #e7e7e7;
+    font-family: 'Times New Roman', Helvetica, Arial, Lucida, sans-serif;
+}
+</style>
+
+<body>
+<div class="title_wrapper">
+    <h1 class="entry-title">Antimicrobial Resistance Visualized</h1>
+</div>
+<div align=center><div class="wpd3-131-6">
+<script src="topojson.v1.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="colorbrewer.v1.min.js"></script>
+<script src="d3.v3.min.js"></script>
+<script src="d3.legend.js"></script>
+<script>
+d3.select(window).on("resize", throttle);
+var margin = {top: 0, right: 30, bottom: 0, left: 80};
+var width =  document.getElementsByClassName("wpd3-131-6")[0].offsetWidth;
+var height = 800;
+var topo,projection,path,svg,g;
+var graticule = d3.geo.graticule();
+var tooltip = d3.select(".wpd3-131-6").append("div").attr("class", "tooltip hidden");
+setup(width,height);
+var u, v, w, nested, Nation_resist, Nation_ResistB, Nation_ResistA, Nation_ResistY;
+
+//Setup projection, center point, canvas
+function setup(width,height){
+    projection = d3.geo.mercator()
+    .translate([(width/2), (height/1.65)])
+    .scale( width / 2.2 / Math.PI);
+    
+    path = d3.geo.path().projection(projection);
+    
+    svg = d3.select(".wpd3-131-6").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", click)
+    .append("g");
+    
+    g = svg.append("g");
+}
+
+//Load the map
+d3.json("world-topo-min.json", function(error, world) {
+        var countries = topojson.feature(world, world.objects.countries).features;
+        topo = countries;
+        draw(topo);
+        });
+        
+        function draw(topo) {
+            
+             svg.append("path")
+             .datum(graticule)
+             .attr("class", "graticule")
+             .attr("d", path);
+             g.append("path")
+             .datum({type: "LineString", coordinates: [[-180, 0], [-90, 0], [0, 0], [90, 0], [180, 0]]})
+             .attr("class", "equator")
+             .attr("d", path);
+            
+            //Draw country borders and fill the area, assign country names
+            var country = g.selectAll(".country").data(topo);
+            country.enter().insert("path")
+            .attr("class", "country")
+            .attr("d", path)
+            .transition()
+            .duration(500)
+            .attr("id", function(d,i) { return d.id; })
+            .attr("title", function(d,i) { return d.properties.name; })
+            .style('fill', 'lightgrey')
+            .style("stroke-width", 1)
+            .style('stroke', '#70738F')
+            
+            //Load antimicrobial resistance data
+            d3.csv("Antimicrobial_Resistance.csv", function(d) {
+                   d['Resistance'] = +d['Resistance'];
+                   d['Tested_isolates'] = +d['Tested_isolates'];
+                   d['PeriodFrom'] = +d['PeriodFrom'];
+                   d['PeriodTill'] = +d['PeriodTill'];
+                   
+                   return d;
+                   }, add_data);
+                   //var nesteded = add_data.nested;
+                   
+                   //offsets for tooltips
+                   var offsetL = document.getElementsByClassName("wpd3-131-6")[0].offsetLeft+20;
+                   var offsetT = document.getElementsByClassName("wpd3-131-6")[0].offsetTop+10;
+                   
+                   //Calculate weighted average resistance
+                   var find_resist = function (d){
+                       var resist_pct;
+                       for (var g =0; g < Nation_resist.length; g++){
+                           if(d.properties.name == Nation_resist[g].States){
+                               var right_resist =  Nation_resist[g].Total_resist /Nation_resist[g].Counter;
+                               var right_resist = right_resist.toFixed(2);
+                               var resist_pct = right_resist + "%";
+                               var g = Nation_resist.length +1;
+                           }
+                       }
+                       
+                       if (typeof(resist_pct) == "undefined") {
+                           resist_pct = "No data";
+                       }
+                       return resist_pct;
+                   };
+                   
+                   var find_resistB = function (d){
+                       var resist_pct;
+                       for (var g =0; g < Nation_resistB.length; g++){
+                           if(d.properties.name == Nation_resistB[g].States){
+                               var right_resist =  Nation_resistB[g].Total_resist /Nation_resistB[g].Counter;
+                               var right_resist = right_resist.toFixed(2);
+                               var resist_pct = right_resist + "%";
+                               var g = Nation_resistB.length +1;
+                           }
+                       }
+                       
+                       if (typeof(resist_pct) == "undefined") {
+                           resist_pct = "No data";
+                       }
+                       return resist_pct;
+                   };
+                   
+                   var find_resistA = function (d){
+                       var resist_pct;
+                       for (var g =0; g < Nation_resistA.length; g++){
+                           if(d.properties.name == Nation_resistA[g].States){
+                               var right_resist =  Nation_resistA[g].Total_resist /Nation_resistA[g].Counter;
+                               var right_resist = right_resist.toFixed(2);
+                               var resist_pct = right_resist + "%";
+                               var g = Nation_resistA.length +1;
+                           }
+                       }
+                       
+                       if (typeof(resist_pct) == "undefined") {
+                           resist_pct = "No data";
+                       }
+                       return resist_pct;
+                   };
+                   
+                   var find_resistY = function (d){
+                       var resist_pct;
+                       for (var g =0; g < Nation_resistY.length; g++){
+                           if(d.properties.name == Nation_resistY[g].States){
+                               var right_resist =  Nation_resistY[g].Total_resist /Nation_resistY[g].Counter;
+                               var right_resist = right_resist.toFixed(2);
+                               var resist_pct = right_resist + "%";
+                               var g = Nation_resistY.length +1;
+                           }
+                       }
+                       
+                       if (typeof(resist_pct) == "undefined") {
+                           resist_pct = "No data";
+                       }
+                       return resist_pct;
+                   };
+                   
+                   //Tooltip action for the respective display of nest level data in the constructed Javascript object
+                   country
+                   .on("mousemove", function(d,i) {
+                       
+                       var mouse = d3.mouse(svg.node()).map( function(d) { return parseInt(d); } );
+                       if ((typeof(u) == "undefined")  && (typeof(v) == "undefined") && (typeof(w) == "undefined")){
+                       tooltip.classed("hidden", false)
+                       .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+                       .html("<span id='tooltipHead'>" + d.properties.name + "</span><br/>" +
+                             "<span id='tooltipTitle'>Bacteria Types </span>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Antibiotics </span>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Year </span>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Weighted average resistance </span>" + "<span id='tooltipContent'>" + find_resist(d) + "</span>"
+                             );
+                        }
+                       if ((typeof(u) != "undefined") && (typeof(v)  === "undefined")) {
+                       tooltip.classed("hidden", false)
+                       .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+                       .html("<span id='tooltipHead'>" + d.properties.name + "</span><br/>" +
+                             "<span id='tooltipTitle'>Bacteria Types </span></strong>" + "<span id='tooltipContent'>" +  nested[u].key +  "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Antibiotics </span></strong>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Year </span></strong>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Weighted average resistance </span></strong>" + "<span id='tooltipContent'>" + find_resistB(d) + "</span>"
+                             );
+                       }
+                       if (((typeof(u) && typeof(v)) != "undefined") && (typeof(w)  === "undefined")) {
+                       tooltip.classed("hidden", false)
+                       .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+                       .html("<span id='tooltipHead'>" + d.properties.name + "</span><br/>" +
+                             "<span id='tooltipTitle'>Bacteria Types </span>" + " <span id='tooltipContent'>" +  nested[u].key +  "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Antibiotics </span>" + "<span id='tooltipContent'>" + nested[u].values[v].key + "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Year </span>" + "<span id='tooltipContent'>All</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Weighted average resistance </span>" + "<span id='tooltipContent'>" + find_resistA(d) + "</span>"
+                             );
+                       }
+                       if ((typeof(u) && typeof(v) && typeof(w)) != "undefined"){
+                       tooltip.classed("hidden", false)
+                       .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+                       .html("<span id='tooltipHead'>" + d.properties.name + "</span><br/>" +
+                             "<span id='tooltipTitle'>Bacteria Types </span>" + "<span id='tooltipContent'>" +  nested[u].key +  "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Antibiotics </span>" + "<span id='tooltipContent'>" + nested[u].values[v].key + "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Year </span>" + "<span id='tooltipContent'>" + nested[u].values[v].values[w].key + "</span>" +"<br/>" +
+                             "<span id='tooltipTitle'>Weighted average resistance </span>" + "<span id='tooltipContent'>" + find_resistY(d) + "</span>"
+                             );
+                       }
+                       })
+                       .on("mouseout",  function(d,i) {
+                           tooltip.classed("hidden", true);
+                           d3.select(this)
+                           .style("stroke-width", 1)
+                           .style('stroke', '#70738F')
+                           .style("fill-opacity", "1");
+                           });
+                           
+                           
+                           var format = d3.time.format("%d-%m-%Y (%H:%M h)");
+                           
+                           
+                           
+        }
+
+function redraw() {
+    width = document.getElementsByClassName("wpd3-131-6")[0].offsetWidth;
+    height = width / 1.65;
+    d3.select('svg').remove();
+    setup(width,height);
+    draw(topo);
+}
+
+
+var throttleTimer;
+function throttle() {
+    window.clearTimeout(throttleTimer);
+    throttleTimer = window.setTimeout(function() {
+                                      redraw();
+                                      }, 200);
+}
+
+//geo translation on mouse click in map
+function click() {
+    var latlon = projection.invert(d3.mouse(this));
+    console.log(latlon);
+}
+
+//Function to reconstruct the data from the csv file into a 4 level nest that are sorted in the order of bacteria > antobiotic > year > country
+//Also to find the maximum resistance by looping through the constructed Javascript object, and then distribute the range (from a to maximum resistance) across a range of 9 colors) to be used by shading the country areas
+function add_data(polygons) {
+    
+    var amr_yearly =[];
+    polygons.forEach(function (d, i) {
+         for (var j = d['PeriodFrom']; j <= d['PeriodTill']; j++ ){
+         var amrX = {Year: j, Resistance: d['Resistance'], Bacteria: d['Bacteria'], State: d['Country'], Tested_isolates: d['Tested_isolates'], Antibiotics: d['Antibiotics'], Latitude: d['lat'], Longitude: d['long']}
+         amr_yearly.push(amrX);
+         }
+         });
+         
+         nested = d3.nest()
+         .key(function(d) { return d['Bacteria'];})
+         .key(function(d) { return d['Antibiotics'];})
+         .key(function(d) { return d['Year'];})
+         .key(function(d) { return d['State'];})
+         .rollup(avg_resist)
+         .entries(amr_yearly);
+         
+         var resistance_max = d3.max(nested, function(d) {
+             var avg_max = '';
+             for (var k = 0; k < [d.values][0].length; k++ ){  //number of antibiotics
+             for (var l = 0; l < [d.values][0][k].values.length; l++ ){ //number of years
+             for (var m = 0; m < [d.values][0][k].values[l].values.length; m++ ){ //number of countries
+             avg_max = [d.values][0][k].values[l].values[m].values['Avg_resistance'];
+             if (typeof(real_max) == "undefined") {var real_max = avg_max; }
+             else if (avg_max > real_max) {var real_max = avg_max; }
+             
+             }
+             }
+             }
+             return real_max;
+             });
+             
+             var colors = d3.scale.quantize()
+             .domain([0, resistance_max])
+             .range(colorbrewer.Blues[6]);
+             
+            //Function to construct the leaves of the nest with calculated values stored in a Javascript object
+             function avg_resist(leaves) {
+                 
+                 var total_isolates = d3.sum(leaves, function(d) {return d.Tested_isolates;});
+                 var avg_resistance = d3.sum(leaves, function (d){return (d.Resistance * (d.Tested_isolates / total_isolates));});
+                 var coords = leaves.map(function(d) {return projection([+d.Longitude, +d.Latitude]);});
+                 var center_x = d3.mean(coords, function(d) {return d[0];});
+                 var center_y = d3.mean(coords, function(d) {return d[1];});
+                 
+                 return {'Avg_resistance' : avg_resistance, 'Antibiotics' : leaves[0].Antibiotics, 'Bacteria': leaves[0].Bacteria, 'Year' : leaves[0].Year, 'State' : leaves[0].State, 'Latitude': leaves[0].lat, Longitude: leaves[0].long, 'x' : center_x,'y' : center_y };
+             }
+             
+             function key_func(d) {
+                 return d['key'];
+             }
+             
+             //Function to loop through all countries (with antimicrobial resistance data), retrieve their respective data and calculate weighted average resistance, calculate the shade of colors base on weighted average resistance, providing a general overview of all antimicrobial resistance (average of all bacteria, of their applicable antibiotics in all years with data
+             function update_countries(d) {
+                 Nation_resist =[];
+                 var i = 0;
+                 var fill_color = 'lightgrey';
+                 for (var k = 0; k < [nested][0].length; k++ ){  //number of bacterias
+                     for (var l = 0; l < [nested][0][k].values.length; l++ ){ //number of antibiotics
+                         for (var m = 0; m < [nested][0][k].values[l].values.length; m++ ){ //number of years
+                             for (var n = 0; n < [nested][0][k].values[l].values[m].values.length; n++ ){ //number of countries
+                                 var check_nation = false;
+                                 for (var p = 0; p < Nation_resist.length; p++){
+                                     if (Nation_resist[p].States == [nested][0][k].values[l].values[m].values[n].values['State']) {
+                                         var check_nation = true;
+                                         var q = p;
+                                         var p = Nation_resist.length + 1;
+                                     }
+                                 }
+                                 
+                                 if (check_nation == false){
+                                     var Nation_resistX = { "ID": i, "States": [nested][0][k].values[l].values[m].values[n].values['State'], "Total_resist": [nested][0][k].values[l].values[m].values[n].values['Avg_resistance'], "Counter" : 1  }
+                                     Nation_resist.push(Nation_resistX);
+                                     i++;
+                                 }
+                                 else
+                                 {
+                                     Nation_resist[q].Total_resist =  Nation_resist[q].Total_resist + [nested][0][k].values[l].values[m].values[n].values['Avg_resistance'];
+                                     Nation_resist[q].Counter = (Nation_resist[q].Counter) + 1;
+                                 }
+                             }
+                         }
+                     }
+                 }
+                 
+                 for (var g =0; g < Nation_resist.length; g++){
+                     if(d.properties.name == Nation_resist[g].States){
+                         var fill_color =  colors(Nation_resist[g].Total_resist / Nation_resist[g].Counter);
+                     }
+                 }
+                 return fill_color;
+             }
+             g.selectAll('.country')
+             .transition()
+             .duration(500)
+             .style('fill', update_countries)
+             .style("stroke-width", 1)
+             .style('stroke', '#70738F');
+             
+             
+             /* to express resistance with bubble instead of polygon
+              g.append('g')
+              .attr("class", "bubble")
+              .selectAll("circle")
+              .data(nested)
+              .enter()
+              .append("circle")
+              .attr('cx', function(d) { return [d.values][0][0].values[0].values[0].values['x']; })
+              .attr('cy', function(d) { return [d.values][0][0].values[0].values[0].values['y']; })
+              .attr('r', function(d) { return radius([d.values][0][0].values[0].values[0].values['Avg_resistance']);
+              })
+              */
+             
+             //Function to loop through all countries (countries with antimicrobial resistance data for that selected bacteria), retrieve their respective data and calculate weighted average resistance, calculate the shade of colors base on weighted average resistance
+             function select_countries_bybacteria(p) {
+                 function update_countries_bybacteria (d) {
+                     
+                     Nation_resistB =[];
+                     var i = 0;
+                     var fill_color = 'lightgrey';
+                     for (var l = 0; l < [nested][0][p].values.length; l++ ){ //number of antibiotics
+                         for (var m = 0; m < [nested][0][p].values[l].values.length; m++ ){ //number of years
+                             for (var n = 0; n < [nested][0][p].values[l].values[m].values.length; n++ ){ //number of countries
+                                 var check_nation = false;
+                                 for (var h = 0; h < Nation_resistB.length; h++){
+                                     if (Nation_resistB[h].States == [nested][0][p].values[l].values[m].values[n].values['State']) {
+                                         var check_nation = true;
+                                         var q = h;
+                                         var h = Nation_resistB.length + 1;
+                                     }
+                                 }
+                                 
+                                 if (check_nation == false){
+                                     var Nation_resistX = { "ID": i, "States": [nested][0][p].values[l].values[m].values[n].values['State'], "Total_resist": [nested][0][p].values[l].values[m].values[n].values['Avg_resistance'], "Counter" : 1  }
+                                     Nation_resistB.push(Nation_resistX);
+                                     i++;
+                                 }
+                                 else
+                                 {
+                                     Nation_resistB[q].Total_resist =  Nation_resistB[q].Total_resist + [nested][0][p].values[l].values[m].values[n].values['Avg_resistance'];
+                                     Nation_resistB[q].Counter = (Nation_resistB[q].Counter) + 1;
+                                 }
+                                 
+                                 var check_nation = false;
+                                 for (var h = 0; h < Nation_resistB.length; h++){
+                                     if (Nation_resistB[h].States == [nested][0][p].values[l].values[m].values[n].values['State']) {
+                                         var check_nation = true;
+                                         var q = h;
+                                         var h = Nation_resistB.length + 1;
+                                     }
+                                 }
+                                 
+                                 if (check_nation == false){
+                                     var Nation_resistX = { "ID": i, "States": [nested][0][p].values[l].values[m].values[n].values['State'], "Total_resist": [nested][0][p].values[l].values[m].values[n].values['Avg_resistance'], "Counter" : 1  }
+                                     Nation_resistB.push(Nation_resistX);
+                                     i++;
+                                 }
+                                 else
+                                 {
+                                     Nation_resistB[q].Total_resist =  Nation_resistB[q].Total_resist + [nested][0][p].values[l].values[m].values[n].values['Avg_resistance'];
+                                     Nation_resistB[q].Counter = (Nation_resistB[q].Counter) + 1;
+                                 }
+                             }
+                         }
+                     }
+                     
+                     for (var g =0; g < Nation_resistB.length; g++){
+                         if(d.properties.name == Nation_resistB[g].States){
+                             var fill_color =  colors(Nation_resistB[g].Total_resist / Nation_resistB[g].Counter);
+                         }
+                     }
+                     return fill_color;
+                 }
+                 g.selectAll('.country')
+                 .style('fill', update_countries_bybacteria)
+                 .style("stroke-width", 1)
+                 .style('stroke', '#70738F');
+             }
+             
+             //Function to loop through all countries (countries with antimicrobial resistance data for the selected antibiotic and bacteria), retrieve their respective data and calculate weighted average resistance, calculate the shade of colors base on weighted average resistance
+             function select_countries_byantibiotics (p,s) {
+                 function update_countries_byantibiotics (d) {
+                     Nation_resistA =[];
+                     var i = 0;
+                     var fill_color = 'lightgrey';
+                     for (var m = 0; m < [nested][0][p].values[s].values.length; m++ ){ //number of years
+                         for (var n = 0; n < [nested][0][p].values[s].values[m].values.length; n++ ){ //number of countries
+                             var check_nation = false;
+                             for (var h = 0; h < Nation_resistA.length; h++){
+                                 if (Nation_resistA[h].States == [nested][0][p].values[s].values[m].values[n].values['State']) {
+                                     var check_nation = true;
+                                     var q = h;
+                                     var h = Nation_resistA.length + 1;
+                                 }
+                             }
+                             
+                             if (check_nation == false){
+                                 var Nation_resistX = { "ID": i, "States": [nested][0][p].values[s].values[m].values[n].values['State'], "Total_resist": [nested][0][p].values[s].values[m].values[n].values['Avg_resistance'], "Counter" : 1  }
+                                 Nation_resistA.push(Nation_resistX);
+                                 i++;
+                             }
+                             else
+                             {
+                                 Nation_resistA[q].Total_resist =  Nation_resistA[q].Total_resist + [nested][0][p].values[s].values[m].values[n].values['Avg_resistance'];
+                                 Nation_resistA[q].Counter = (Nation_resistA[q].Counter) + 1;
+                             }
+                             
+                             var check_nation = false;
+                             for (var h = 0; h < Nation_resistA.length; h++){
+                                 if (Nation_resistA[h].States == [nested][0][p].values[s].values[m].values[n].values['State']) {
+                                     var check_nation = true;
+                                     var q = h;
+                                     var h = Nation_resistA.length + 1;
+                                 }
+                             }
+                             
+                             if (check_nation == false){
+                                 var Nation_resistX = { "ID": i, "States": [nested][0][p].values[s].values[m].values[n].values['State'], "Total_resist": [nested][0][p].values[s].values[m].values[n].values['Avg_resistance'], "Counter" : 1  }
+                                 Nation_resistA.push(Nation_resistX);
+                                 i++;
+                             }
+                             else
+                             {
+                                 Nation_resistA[q].Total_resist =  Nation_resistA[q].Total_resist + [nested][0][p].values[s].values[m].values[n].values['Avg_resistance'];
+                                 Nation_resistA[q].Counter = (Nation_resistA[q].Counter) + 1;
+                             }
+                         }
+                     }
+                     for (var g =0; g < Nation_resistA.length; g++){
+                         if(d.properties.name == Nation_resistA[g].States){
+                             var fill_color =  colors(Nation_resistA[g].Total_resist / Nation_resistA[g].Counter);
+                         }
+                     } 
+                     return fill_color;  
+                 }
+                 g.selectAll('.country')
+                 .style('fill', update_countries_byantibiotics)
+                 .style("stroke-width", 1)
+                 .style('stroke', '#70738F');
+             }  
+             
+             //Function to loop through all countries (countries with antimicrobial resistance data for that selected year, antibiotic and bacteria), retrieve their respective data and calculate weighted average resistance, calculate the shade of colors base on weighted average resistance
+             function select_countries_byyear(p,s,t) { 
+                 function update_countries_byyear (d) {   
+                     
+                     Nation_resistY =[];
+                     var i = 0;    
+                     var fill_color = 'lightgrey';  
+                     
+                     for (var n = 0; n < [nested][0][p].values[s].values[t].values.length; n++ ){ //number of countries
+                         var check_nation = false;
+                         for (var h = 0; h < Nation_resistY.length; h++){
+                             if (Nation_resistY[h].States == [nested][0][p].values[s].values[t].values[n].values['State']) { 
+                                 var check_nation = true;
+                                 var q = h;
+                                 var h = Nation_resistY.length + 1;
+                             }
+                         }
+                         
+                         if (check_nation == false){
+                             var Nation_resistX = { "ID": i, "States": [nested][0][p].values[s].values[t].values[n].values['State'], "Total_resist": [nested][0][p].values[s].values[t].values[n].values['Avg_resistance'], "Counter" : 1  }
+                             Nation_resistY.push(Nation_resistX);
+                             i++;
+                         }
+                         else
+                         {
+                             Nation_resistY[q].Total_resist =  Nation_resistY[q].Total_resist + [nested][0][p].values[s].values[t].values[n].values['Avg_resistance'];
+                             Nation_resistY[q].Counter = (Nation_resistY[q].Counter) + 1;
+                         } 
+                         
+                         var check_nation = false;
+                         for (var h = 0; h < Nation_resistY.length; h++){
+                             if (Nation_resistY[h].States == [nested][0][p].values[s].values[t].values[n].values['State']) { 
+                                 var check_nation = true;
+                                 var q = h;
+                                 var h = Nation_resistY.length + 1;
+                             }
+                         }
+                         
+                         if (check_nation == false){
+                             var Nation_resistX = { "ID": i, "States": [nested][0][p].values[s].values[t].values[n].values['State'], "Total_resist": [nested][0][p].values[s].values[t].values[n].values['Avg_resistance'], "Counter" : 1  }
+                             Nation_resistY.push(Nation_resistX);
+                             i++;
+                         }
+                         else
+                         {
+                             Nation_resistY[q].Total_resist =  Nation_resistY[q].Total_resist + [nested][0][p].values[s].values[t].values[n].values['Avg_resistance'];
+                             Nation_resistY[q].Counter = (Nation_resistY[q].Counter) + 1;
+                         } 
+                     }
+                     
+                     for (var g =0; g < Nation_resistY.length; g++){
+                         if(d.properties.name == Nation_resistY[g].States){
+                             var fill_color =  colors(Nation_resistY[g].Total_resist / Nation_resistY[g].Counter);
+                         }
+                     } 
+                     return fill_color;  
+                 }
+                 
+                 g.selectAll('.country')
+                 .style('fill', update_countries_byyear)
+                 .style("stroke-width", 1)
+                 .style('stroke', '#70738F');
+             }  
+             
+             //Function to highlight the year as the animation run through year by year
+             function highlight_year_button (p,s,t) {
+                 var fill_color = '#F30'
+                 var text_color = '#F30';
+                 function update_year_button (d) {     
+                     
+                     if(d == [nested][0][p].values[s].values[t].key){
+                         var fill_color = '#FEB24C';
+                         var text_color = '#FFF';
+                     } 
+                     //return [fill_color, text_color]; 
+                     return fill_color; 
+                 }
+                 d3.selectAll(".year_buttons div")
+                 .style('background', update_year_button)
+                 .style('color', '#F30')
+             }  
+             
+             //Legend
+             var legend = svg.selectAll(".wpd3-131-6")
+             .data(colors.range())
+             .enter().append("g")
+             .attr("class", "legend")
+             .attr("x", 100)
+             .attr("transform", function (d, i) {
+               return "translate(" + i * 39 + ",0)";
+               });
+               
+               legend.append("rect")
+               //.attr("dx", ".35em")
+               .attr("x", width -600)
+               .attr("y", height - 165)
+               .attr("width", 38)
+               .attr("height", 18)
+               .style('fill', String);
+               
+               legend.append("text")
+               .attr("x", width -580 )
+               //.attr("x",function(d,i) { return i+".2em"})
+               .attr("y", height - 170)
+               .attr("dx", ".35em")
+               .style("text-anchor", "end")
+               .style("font-size","11px")
+               .text(function (d) {
+                     var r = colors.invertExtent(d);
+                     var t = Math.round(r[0])
+                     return t;
+                     });
+                     
+                     legend.append("text")
+                     .attr("x", width -580 )
+                     //.attr("x",function(d,i) { return i+".2em"})
+                     .attr("y", height - 130)
+                     .attr("dx", ".35em")
+                     .style("text-anchor", "end")
+                     .style("font-size","11px")
+                     .text(function (d) {
+                           var r = colors.invertExtent(d);
+                           var u = Math.round(r[1])
+                           return u;
+                           });
+                           
+                           svg.append("text")
+                           .attr("x", width - 247)
+                           .attr("y", height - 151)
+                           .attr("text-anchor", "left")  
+                           .style("font-size", "16px") 
+                           .style("font-style", "bold")  
+                           .style("text-decoration-color", "blue") 
+                           .text("%");
+                           
+                           svg.append("text")
+                           .attr("x", width - 685)
+                           .attr("y", height - 169)
+                           .attr("text-anchor", "left")  
+                           .style("font-size", "12px") 
+                           .style("font-style", "bold")  
+                           //.style("text-decoration-color", "blue") 
+                           .text("Resistance from");
+                           
+                           svg.append("text")
+                           .attr("x", width - 610)
+                           .attr("y", height - 131)
+                           .attr("text-anchor", "left")  
+                           .style("font-size", "12px") 
+                           .style("font-style", "bold")  
+                           //.style("text-decoration-color", "blue") 
+                           .text("To");
+                           
+                           svg.append("text")
+                           .attr("x", 90)
+                           .attr("y", 460)
+                           .attr("text-anchor", "left")  
+                           .style("font-size", "18px") 
+                           .style("font-family", "Ruda")
+                           .style("font-style", "bold")  
+                           .style("fill", "#4D4D4D") 
+                           .text("Select a bacteria type");
+                           
+                           
+                           //Start printing buttons on the map, which clicking on any button will bring up the respective highlight by country in the map
+                           var anti_array = [];
+                           var bac_array = [];
+                           nested.forEach(function (d,i) { //Make an array full of bacterias
+                              var bacX = [nested][0][i]['key'];
+                              bac_array.push(bacX);
+                              });
+                              bac_button (bac_array);
+                              
+                              //Function to print the animate button (play button) and play the animation (running from start year to end year) with an interval of 500ms
+                              function animate_year_button (p,s, year_array) {
+                                  var animate_button = d3.select(".animate_button").remove();
+                                  var animate_button = d3.select(".wpd3-131-6")
+                                  .append("div")
+                                  .attr("class", "animate_button")
+                                  .html("&#9658;");
+                                  
+                                  animate_button
+                                  .on("click",  function(d) {
+                                      d3.select(".animate_button")
+                                      .selectAll("div")
+                                      .transition()
+                                      .duration(500)
+                                      .style("color", "white");
+                                      
+                                      d3.select(this)
+                                      .transition()
+                                      .duration(500)
+                                      .style("background", "#D0D0D0")
+                                      .style("color", "white");
+                                      var year_idx = 0;
+                                      var year_interval = 0;
+                                      var year_interval = setInterval(function() { //begin animation at an interval of 500ms once user click the play button
+                                          var t = year_idx;
+                                          select_countries_byyear(p,s,t);
+                                          highlight_year_button (p,s,t);
+                                          year_idx++;
+                                          if(year_idx >= year_array.length) { 
+                                          clearInterval(year_interval);
+                                          d3.select(".animate_button")
+                                          .transition()
+                                          .duration(500)
+                                          .style("background", "#FF3300")
+                                          .style("color", "white");
+                                          }
+                                          }, 500);
+                                      });
+                              }
+                              
+                              //Function to print the year buttons and listen up for the year being clicked
+                              function year_button(p,s,year_array){
+                                  
+                                  d3.select("#yeartext").remove();
+                                  svg.append("text")
+                                  .attr("x", 10)
+                                  .attr("y", 78)
+                                  .attr("id", "yeartext")
+                                  .attr("text-anchor", "left")  
+                                  .style("font-size", "16px") 
+                                  .style("font-weight", "bold")  
+                                  .style("fill", "#4D4D4D") 
+                                  .text("Year");
+                                  
+                                  var year_buttons = d3.selectAll(".year_buttons").remove();
+                                  var animate_button = d3.select(".animate_button").remove();
+                                  var year_buttons = d3.select(".wpd3-131-6")
+                                  .append("div")
+                                  .attr("class", "year_buttons")
+                                  .selectAll("div")
+                                  .data(year_array.sort(function(a, b){return a-b}))
+                                  .enter()
+                                  .append("div")
+                                  .text(function(ev) {
+                                        return ev;
+                                        });
+                                        
+                                        year_buttons
+                                        .on("click", function(ev) { 
+                                            d3.select(".year_buttons")
+                                            .selectAll("div")
+                                            .transition()
+                                            .duration(500)
+                                            .style("color", "#F30")
+                                            .style("background", "#ebecfa");
+                                            
+                                            d3.select(this)
+                                            .transition()
+                                            .duration(500)
+                                            .style("background", "#FEB24C")
+                                            .style("color", "white");
+                                            
+                                            if(this!== undefined) {
+                                            var yearY = this.__data__;
+                                            for (var q=0; q< [nested][0][p].values[s].values.length; q++ ) { //to get the index number of the selected year
+                                            if (([nested][0][p].values[s].values[q].key) === yearY) { 
+                                            var t = q;
+                                            w = q;
+                                            var q = [nested][0][p].values[s].values.length + 1; 
+                                            }
+                                            }
+                                            select_countries_byyear (p,s,t);
+                                            }
+                                            
+                                            });
+                              }
+                              
+                              
+                              //Function to print the antibiotic buttons, listen up for which antibiotic is being clicked
+                              function anti_button(p,anti_array){
+                                  
+                                  /*svg.append("rect")
+                                   .attr("x", 54)             
+                                   .attr("y", 402)
+                                   //.attr("rx", 6)             
+                                   //.attr("ry", 6)
+                                   .attr("width", 200)
+                                   .attr("height", 80)
+                                   .style("fill", "#69F")//lightblue
+                                   .style("opacity", "0.5");*/
+                                  
+                                  d3.select("#yeartext").remove();
+                                  d3.select("#antitext").remove();
+                                  svg.append("text")
+                                  .attr("x", 90)
+                                  .attr("y", 360)
+                                  .attr("id", "antitext")
+                                  .attr("text-anchor", "left")  
+                                  .style("font-size", "18px")
+                                  .style("font-family", "Ruda")
+                                  .style("font-style", "bold")  
+                                  .style("fill", "#4D4D4D") 
+                                  .text("Select an antibiotics");
+                                  
+                                  var anti_buttons = d3.selectAll(".antibiotics_buttons").remove();
+                                  var animate_button = d3.select(".animate_button").remove();
+                                  var year_buttons = d3.selectAll(".year_buttons").remove();
+                                  var anti_buttons = d3.select(".wpd3-131-6")
+                                  .append("div")
+                                  .attr("class", "antibiotics_buttons")
+                                  .selectAll("div")
+                                  .data(anti_array)
+                                  .enter()
+                                  .append("div")
+                                  .text(function(ev) {
+                                        return ev;
+                                        });
+                                        
+                                        anti_buttons
+                                        .on("click", function(ev) { 
+                                            d3.select(".antibiotics_buttons")
+                                            .selectAll("div")
+                                            .transition()
+                                            .duration(500)
+                                            .style("color", "#730000")
+                                            .style("background", "#ebecfa");//F5F0EB
+                                            
+                                            d3.select(this)
+                                            .transition()
+                                            .duration(500)
+                                            .style("background", "#111645")
+                                            .style("opacity", "0.9")
+                                            .style("color", "#fff");
+                                            
+                                            
+                                            if(this!== undefined) {
+                                            var antiB = this.__data__;
+                                            
+                                            var year_array = [];
+                                            for (var k=0; k< [nested][0][p].values.length; k++ ) { //to get the index number of the antibiotic being clicked
+                                            if (([nested][0][p].values[k].key) === antiB) { 
+                                            var s = k;
+                                            v = k;
+                                            w = undefined;
+                                            var k = [nested][0][p].values.length + 1;
+                                            }
+                                            if (s >=0){
+                                            for (var q = 0; q < [nested][0][p].values[s].values.length; q++ ){ // to get the years of the clicked bacteria and antibiotic from the index number obtained above
+                                            var yearX = [nested][0][p].values[s].values[q].key;
+                                            year_array.push(yearX);
+                                            }
+                                            }
+                                            } 
+                                            year_button (p,s,year_array); //Call the function to print the year buttons of the clicked bacteria & antibiotic
+                                            select_countries_byantibiotics (p, s);
+                                            animate_year_button (p,s,year_array); //
+                                            }
+                                            
+                                            });
+                                            
+                              }
+                              
+                              //Function to print the bacteria buttons and listen up for which bacteria is being clicked
+                              function bac_button(bac_array){
+                                  
+                                  var buttons = d3.select(".wpd3-131-6")
+                                  .append("div")
+                                  .attr("class", "bacterias_buttons")
+                                  .selectAll("div")
+                                  .data(bac_array)
+                                  .enter()
+                                  .append("div")
+                                  .text(function(c) {
+                                        return c;
+                                        });
+                                        
+                                        buttons.on("click", function(c) {
+                                           d3.select(".bacterias_buttons")
+                                           .selectAll("div")
+                                           .transition()
+                                           .duration(500)
+                                           .style("color", "#069")
+                                           .style("background", "#ebecfa");//F5F0EB
+                                           
+                                           d3.select(this)
+                                           .transition()
+                                           .duration(500)
+                                           .style("background", "#111645")
+                                           .style("opacity", "0.9")
+                                           .style("color", "#fff");
+                                           
+                                           if(this['__data__'] !== undefined) {
+                                           var bac = this.__data__;
+                                           var anti_array = [];
+                                           for (var k=0; k< [nested][0].length; k++ ) { //to get the index number of the bacteria being clicked, ultimately saved to variable u
+                                           if (([nested][0][k].key) === bac) { 
+                                           var p = k;
+                                           u = k;
+                                           v = undefined;
+                                           w = undefined;
+                                           var k = [nested][0].length + 1;
+                                           }
+                                           if (p >=0){
+                                           for (var q = 0; q < [nested][0][p].values.length; q++ ){ // to get the antibiotics of the clicked bacteria from the index number obtained above
+                                           var antiX = [nested][0][p].values[q].key;
+                                           anti_array.push(antiX);
+                                           }
+                                           }
+                                           } 
+                                           anti_button (p,anti_array); //Call the function to print the antibiotic buttons of the clicked bacteria
+                                           select_countries_bybacteria (p);
+                                           }
+                                           
+                                           });  
+                                           
+                              }
+                              return nested;
+}
+</script></div></div>
+</body>
+</html>
