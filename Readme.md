@@ -1,8 +1,5 @@
-#DAND P6 - Make Effective Data Visualization
-#Jiew Wan Tan 
-##26th August 2016
-
-##Summary 
+# Worldwide antimicrobial resistance data visualization using data-driven document D3.js
+## 26th August 2016
 
 Starting from the discovery of antibiotic, bacteria has started to develop resistance towards drugs and chemical. 
 
@@ -12,11 +9,9 @@ It is a serious issues that potentially threathens human existence, unseen by na
 
 This visualization uses isolate test data collected from worldwide hospitals and research institutes, showing how bacteria have came to be more resistant towards their applicable antibiotics over the years in countries where data is available. 
 
+## Design 
 
-
-##Design 
-
-###Initial design decision 
+### Initial design decision 
 The purpose of the design is to communicate the evolving severity (higher resistance) and expansive (to more geogrpahic areas) nature of antibiotic resistance of a number of bacteria. This phenomenon is recognized and being taken seriously within selected circles of medical practice, particularly infectious disease and microbiology fields. However, unlike viral infections such as Ebola and avian flu, it is not an epidemic. It is a slowly advancing threat, so it doesn't generate as much public awareness. This visualization hopes to provide the awareness in a layman understandable manner. 
 
 
@@ -53,7 +48,7 @@ World health Organization (WHO) is collecting more data in a worldwide scale cur
 Note: CSV file with 2014 data is saved as Antimicrobial_Resistance.csv which is called by AMR.html, CSV file without 2014 data is saved as Antimicrobial_Resistance2.csv which is called by AMR2.html
     AMR-first.html is the first version of the html before design improvement. It calls Antimicrobial_Resistance.csv
 
-###Design choice made after feedback
+### Design choice made after feedback
 As the mouse hovers over the countries, it is hard to tell which country it is hovering on when the country is small. As such a choice has been made to highlight the borders of the active country with thick white border. Also, changing the opacity to 0.8 enhances the effect of a highlighted country. 
 
 Also a zoom and pan feature has been added to make smaller countries more visible, when user deem it is necessary to zoom in.
@@ -63,7 +58,7 @@ Some users has raised concern that the range of colors (from low to high resista
 A decision is also made to include a line of text to describe what is under animation when the animation is ongoing. 
 
 
-##Feedback
+## Feedback
 
 First reviewer:  Some countries are too small to tell if the mouse cursor is hovering on it and the data is about that countries. 
 
@@ -72,7 +67,7 @@ Second reviewer: Color scheme makes it difficult to tell the level of resistance
 Third reviewer: The lines on the map are making it messy.
 
 
-##Resources
+## Resources
 
 Data file: 
 1. Data extracted from Antibiotic resistance data compiled from WHO surveillance report Annex 2 table & other reports listed in Reference materials #7, #8, #9 & #10: Antimicrobial_Resistance.csv, Antimicrobial_Resistance2.csv
@@ -92,7 +87,7 @@ Note: A production version has been put online in my personal site:
 http://www.onsiteintime.com/antimicrobial-resistance-visualized/
 
 
-##Reference materials: 
+## Reference materials: 
 
 1. Antimicrobial resistance: Global report on surveillance 2014, Annex 2 Reported or published resistance rates in common bacterial pathogens, by WHO region - Full report at http://www.who.int/drugresistance/documents/surveillancereport/en/
 
